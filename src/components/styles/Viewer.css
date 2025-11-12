@@ -1,237 +1,159 @@
 /* src/styles/Viewer.css */
-
-/* ---------- Theme variables ---------- */
+/* Theme */
 :root{
-  --bg: #0f1720;           /* page background */
-  --panel: #0b1220;        /* toolbar/footer background */
-  --muted: #9aa4b2;        /* muted text */
-  --accent: #06b6d4;       /* link/primary accent */
-  --btn-bg: rgba(255,255,255,0.03);
-  --btn-border: rgba(255,255,255,0.06);
-  --glass: rgba(255,255,255,0.03);
-  --white: #ffffff;
-  --radius: 8px;
-  --toolbar-height: 56px;
+  --bg:#0f1720;
+  --panel: rgba(255,255,255,0.03);
+  --muted:#9aa4b2;
+  --accent:#06b6d4;
+  --danger:#ff6b6b;
+  --glass: rgba(255,255,255,0.04);
+  --white:#fff;
+  --radius:10px;
 }
 
-/* ---------- Base resets ---------- */
-* { box-sizing: border-box; }
-html,body,#root { height: 100%; }
-body {
-  margin: 0;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: var(--bg);
-  color: var(--white);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.35;
-}
-
-/* ---------- App root ---------- */
-.pdf-root {
+/* Root layout */
+.viewer-root {
+  width: 100%;
   height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+  background: linear-gradient(180deg, #07101a 0%, #0f1720 100%);
   color: var(--white);
+  position: relative;
   overflow: hidden;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-/* ---------- Top toolbar ---------- */
-.pdf-toolbar {
-  height: var(--toolbar-height);
-  min-height: var(--toolbar-height);
+/* Top bar */
+.viewer-topbar {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 1200;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-  backdrop-filter: blur(4px);
-  z-index: 40;
+  gap: 10px;
+  pointer-events: auto;
 }
 
-.pdf-controls-left,
-.pdf-controls-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* toolbar buttons */
-.pdf-toolbar button {
+/* Button */
+.viewer-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  background: var(--btn-bg);
-  border: 1px solid var(--btn-border);
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.05);
   color: var(--white);
   border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
-  user-select: none;
-}
-.pdf-toolbar button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(2,6,23,0.6);
-}
-.pdf-toolbar button:active { transform: translateY(0); }
-.pdf-toolbar button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* compact icon-like buttons */
-.pdf-toolbar .small {
-  padding: 6px;
-  min-width: 36px;
-  justify-content: center;
-}
-
-/* page indicator */
-.page-indicator {
-  margin-left: 8px;
-  color: var(--muted);
+  text-decoration: none;
   font-size: 13px;
+  transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+  backdrop-filter: blur(6px);
+}
+.viewer-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  background: rgba(255,255,255,0.05);
+}
+.viewer-btn .icon { opacity: 0.95; }
+
+/* URL display */
+.viewer-url {
+  max-width: 720px;
+  color: var(--muted);
+  background: rgba(0,0,0,0.28);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.02);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* input for page jump (if used) */
-.pdf-toolbar input[type="number"] {
-  width: 72px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--btn-border);
-  background: transparent;
-  color: var(--white);
-}
+/* hint fallback */
+.viewer-hint { color: var(--muted); background: rgba(0,0,0,0.28); padding: 8px 12px; border-radius: 8px; font-size:13px; }
 
-/* ---------- Main viewer area ---------- */
-.pdf-container {
-  flex: 1 1 auto;
+/* Preloader overlay */
+.viewer-preloader {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(180deg, rgba(2,6,23,0.65), rgba(2,6,23,0.55));
+  z-index: 1100;
+  transition: opacity .28s ease, transform .28s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+.viewer-preloader.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.viewer-preloader.hidden { opacity: 0; pointer-events: none; }
+
+/* spinner */
+.spinner {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spinner-svg {
+  width: 64px; height: 64px;
+}
+.spinner-svg circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 94;
+  stroke-dashoffset: 70;
+  transform-origin: 50% 50%;
+  animation: spin 1s linear infinite, dash 1.5s ease-in-out infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes dash {
+  0% { stroke-dashoffset: 94; }
+  50% { stroke-dashoffset: 31; transform: rotate(45deg); }
+  100% { stroke-dashoffset: 94; transform: rotate(360deg); }
+}
+
+/* preloader text */
+.preloader-text { color: var(--white); font-size: 15px; font-weight: 600; }
+.preloader-error { color: var(--danger); font-size: 13px; margin-top: 4px; }
+
+/* Adobe viewer container */
+.viewer-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: absolute;
+  left: 0; top: 0;
   overflow: auto;
-  padding: 18px 16px;
   -webkit-overflow-scrolling: touch;
 }
 
-/* center content wrapper to limit width */
-.pdf-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 1400px; /* limit the canvas width for very large screens */
-}
-
-/* white page canvas styling */
-canvas {
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-  background: var(--white);
-  margin: 12px 0;
-  display: block;
-}
-
-/* If react-pdf renders text layer / annotation layer */
-.react-pdf__Page__textContent,
-.react-pdf__Page__annotations {
-  pointer-events: none;
-}
-
-/* loading indicators */
-.pdf-loading {
+/* Footer */
+.viewer-footer {
+  position: absolute;
+  right: 12px; bottom: 12px;
   color: var(--muted);
-  font-size: 14px;
-  padding: 8px 16px;
-}
-
-/* ---------- Footer ---------- */
-.pdf-footer {
-  height: 36px;
-  min-height: 36px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
+  z-index: 1200;
   font-size: 12px;
-  border-top: 1px solid rgba(255,255,255,0.02);
-  background: linear-gradient(0deg, rgba(255,255,255,0.01), rgba(0,0,0,0.01));
-}
-.pdf-footer a { color: var(--accent); text-decoration: none; }
-
-/* ---------- Keyboard & focus accessibility ---------- */
-.pdf-toolbar button:focus,
-.pdf-toolbar input:focus {
-  outline: 2px solid rgba(6,182,212,0.18);
-  box-shadow: 0 6px 20px rgba(6,182,212,0.08);
+  background: rgba(0,0,0,0.18);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.02);
 }
 
-/* ---------- Responsive adjustments ---------- */
-@media (max-width: 980px) {
-  .pdf-toolbar {
-    padding: 8px;
-    gap: 6px;
-  }
-  .page-indicator { display: none; } /* save space on mobile */
-  .pdf-toolbar button { font-size: 13px; padding: 6px 8px; }
-  .pdf-container { padding: 12px 8px; }
-  canvas { margin: 8px 0; }
-}
-
-@media (max-width: 560px) {
-  .pdf-root { font-size: 14px; }
-  .pdf-toolbar { flex-wrap: wrap; height: auto; gap: 6px; padding: 8px; }
-  .pdf-toolbar .pdf-controls-right { order: 2; margin-left: auto; }
-  .pdf-toolbar .pdf-controls-left { order: 1; }
-  .pdf-footer { font-size: 11px; padding: 6px; }
-}
-
-/* ---------- Nice scrollbar for desktop ---------- */
-.pdf-container::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-.pdf-container::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.06);
-  border-radius: 999px;
-  border: 3px solid transparent;
-  background-clip: padding-box;
-}
-.pdf-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ---------- Utilities ---------- */
-.hidden { display: none !important; }
-.center { display: flex; align-items: center; justify-content: center; }
-
-/* ---------- Optional: thin outline for page when focused ---------- */
-canvas:focus {
-  outline: 3px solid rgba(6,182,212,0.14);
-  outline-offset: 2px;
-}
-
-/* --------- Ensure text & annotation layers are readable on top of canvas ----------
-   react-pdf may place text/annotation layers; if you need them interactive,
-   remove pointer-events: none above and tweak z-index.
--------------------------------------------------------------------------*/
-.react-pdf__Page__textContent {
-  color: #222 !important;
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* ---------- Print media (optional) ---------- */
-@media print {
-  .pdf-toolbar, .pdf-footer { display: none; }
-  .pdf-container { padding: 0; }
-  canvas { box-shadow: none; border-radius: 0; }
+/* small responsive tweaks */
+@media (max-width: 720px) {
+  .viewer-topbar { left: 8px; top: 8px; gap: 8px; }
+  .viewer-url { display: none; }
+  .viewer-btn { padding: 7px 9px; font-size: 12px; }
+  .viewer-footer { right: 8px; bottom: 8px; font-size: 11px; }
 }
