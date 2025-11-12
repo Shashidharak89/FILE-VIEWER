@@ -1,3 +1,4 @@
+import Viewer from "./components/Viewer"
 
 
 function App() {
@@ -5,6 +6,7 @@ function App() {
 
   return (
     <>
+    <Viewer/>
      
     </>
   )
