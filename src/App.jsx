@@ -7,7 +7,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Catch-all route: any pathname is forwarded to Viewer */}
         <Route path="/*" element={<Viewer />} />
       </Routes>
     </BrowserRouter>
