@@ -1,15 +1,15 @@
-import Viewer from "./components/Viewer"
+// src/App.jsx
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Viewer from "./components/Viewer";
 
-
-function App() {
- 
-
+export default function App() {
   return (
-    <>
-    <Viewer/>
-     
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        {/* Catch-all route: any pathname is forwarded to Viewer */}
+        <Route path="/*" element={<Viewer />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App
