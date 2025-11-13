@@ -1,7 +1,7 @@
 // src/components/Viewer.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import "../styles/Viewer.css";
+import "./styles/Viewer.css";
 
 /* buildPdfUrlFromPath - smart rules:
    - full http(s) URL -> use directly (ensure .pdf)
