@@ -1,21 +1,339 @@
-.viewer-container {
+:root {
+  --bg: #0f1720;
+  --panel: rgba(255, 255, 255, 0.03);
+  --muted: #9aa4b2;
+  --accent: #8b5cf6;
+  /* purple accent for your theme */
+  --white: #fff;
+}
+
+/* Root */
+.viewer-root {
   width: 100%;
   height: 100vh;
+  position: relative;
+  background: linear-gradient(180deg, #06050a 0%, #0f0b17 100%);
+  color: var(--white);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-.viewer-div {
-  flex: 1;
-  /* Ensure the embed occupies full container and scrolls vertically if content is long */
+/* Top bar */
+.viewer-topbar {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.viewer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--white);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.viewer-url {
+  max-width: 720px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viewer-hint {
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* Preloader */
+.viewer-preloader {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  background: rgba(3, 3, 6, 0.5);
+  z-index: 1100;
+  transition: opacity .28s ease, visibility .28s;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.viewer-preloader.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.viewer-preloader.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.spinner-svg {
+  width: 64px;
+  height: 64px;
+}
+
+.spinner-svg circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-dasharray: 94;
+  stroke-dashoffset: 70;
+  stroke-linecap: round;
+  animation: spin 1s linear infinite, dash 1.5s ease-in-out infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 94;
+  }
+
+  50% {
+    stroke-dashoffset: 31;
+    transform: rotate(45deg);
+  }
+
+  100% {
+    stroke-dashoffset: 94;
+    transform: rotate(360deg);
+  }
+}
+
+.preloader-text {
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.preloader-error {
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+/* Viewer container - default for desktop/tablet */
+.viewer-container {
   width: 100%;
   height: 100%;
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Ensure no margins/padding around body or html in your global CSS optionally */
-html, body, #root {
-  margin: 0;
-  padding: 0;
+/* Desktop/tablet: ensure Adobe container fits center */
+#adobe-pdf-view .adobe-dc-view,
+#adobe-pdf-view iframe {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Mobile portrait tweaks */
+.viewer-container.mobile-portrait {
+  padding: 70px 12px 12px 12px;
+  /* leave space for topbar + breathing room */
+  box-sizing: border-box;
+  overflow: auto;
   height: 100%;
+}
+
+/* Target Adobe iframe or injected divs for mobile portrait: make them width:100% and auto height' so pages flow vertically and are readable in portrait orientation. */
+.viewer-container.mobile-portrait #adobe-pdf-view .adobe-dc-view,
+.viewer-container.mobile-portrait .adobe-dc-view,
+.viewer-container.mobile-portrait iframe,
+.viewer-container.mobile-portrait #adobe-pdf-view iframe {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 600px;
+  /* ensures initial readable height; can be adjusted */
+  max-width: 100% !important;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Also make internal pdf canvas elements responsive if Adobe uses them */
+.adobe-dc-view .page,
+.adobe-dc-view .page canvas,
+.adobe-dc-view .Page {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Footer */
+.viewer-footer {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  color: var(--muted);
+  z-index: 1200;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+/* Responsive: reduce topbar size on small devices */
+@media (max-width: 480px) {
+  .viewer-topbar {
+    left: 8px;
+    top: 8px;
+    gap: 8px;
+  }
+
+  .viewer-url {
+    display: none;
+  }
+
+  .viewer-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .viewer-hint {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .viewer-footer {
+    right: 8px;
+    bottom: 8px;
+    font-size: 11px;
+  }
+}
+
+/* Safety: if Adobe injects shadow DOM or slightly different structure, these high-specificity rules help */
+#adobe-pdf-view iframe[style],
+#adobe-pdf-view .adobe-dc-view[style] {
+  max-width: 100% !important;
+}
+
+/* Print */
+@media print {
+
+  .viewer-topbar,
+  .viewer-preloader,
+  .viewer-footer {
+    display: none !important;
+  }
+
+  .viewer-container {
+    overflow: visible;
+    height: auto;
+  }
+}
+/* Floating prev/next controls */
+.viewer-floating-controls {
+  position: fixed;
+  right: 16px;
+  bottom: 96px;
+  z-index: 1300;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.viewer-floating-controls.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.viewer-floating-controls.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.float-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+/* Floating prev/next controls */
+.viewer-floating-controls {
+  position: fixed;
+  right: 16px;
+  bottom: 96px;
+  z-index: 1300;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
+  transition: opacity 0.18s ease, transform 0.18s;
+}
+
+/* Keep visible by default — hidden class still supported if you want to toggle via code */
+.viewer-floating-controls.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.viewer-floating-controls.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.float-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
 }

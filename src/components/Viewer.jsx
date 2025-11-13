@@ -1,70 +1,54 @@
 import React, { useEffect, useRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import "./styles/Viewer.css";
 
-const Viewer = () => {
+export default function Viewer() {
   const viewerDivRef = useRef(null);
-  const { "*": pdfPath } = useParams(); 
-  // e.g. if route is /somefolder/xyz.pdf then pdfPath = "somefolder/xyz.pdf"
-  const query = new URLSearchParams(useLocation().search);
-  const pdfUrlFromQuery = query.get("pdf") || null;
+  const location = useLocation();
 
-  // Determine PDF URL: prefer URL param if given, else pdfPath
-  const pdfURL = pdfUrlFromQuery || (pdfPath ? `/${pdfPath}` : null);
+  // derive PDF URL from path (assuming something like /xyz.pdf)
+  const path = decodeURIComponent(location.pathname.slice(1));
+  const pdfUrl = path ? path : null;
 
   useEffect(() => {
-    if (!pdfURL) {
-      console.warn("No PDF URL provided for Viewer");
+    if (!pdfUrl) return;
+
+    const clientId = import.meta.env.VITE_ADOBE_CLIENT_ID;
+    if (!clientId) {
+      console.error("Missing Adobe PDF Embed API client ID");
       return;
     }
 
-    const loadEmbed = async () => {
-      await new Promise(resolve => {
-        if (window.AdobeDC && window.AdobeDC.View) {
-          resolve();
-        } else {
-          document.addEventListener("adobe_dc_view_sdk.ready", () => resolve(), { once: true });
-        }
-      });
-
-      const clientId = import.meta.env.VITE_ADOBE_CLIENT_ID;
-      if (!clientId) {
-        console.error("VITE_ADOBE_CLIENT_ID environment variable is not set");
-        return;
-      }
-
+    const loadViewer = () => {
       const adobeDCView = new window.AdobeDC.View({
-        clientId,
-        divId: viewerDivRef.current.id,
+        clientId: clientId,
+        divId: viewerDivRef.current.id
       });
 
       adobeDCView.previewFile(
         {
-          content: { location: { url: pdfURL } },
-          metaData: { fileName: pdfURL.split("/").pop() },
+          content: { location: { url: pdfUrl } },
+          metaData: { fileName: pdfUrl.split("/").pop() }
         },
         {
           embedMode: "IN_LINE",
           defaultViewMode: "FIT_WIDTH",
           showDownloadPDF: false,
-          showPrintPDF: false,
+          showPrintPDF: false
         }
       );
     };
 
-    loadEmbed();
-
-    // Optional: cleanup if needed
-    return () => {
-      // If the API provides a disposal method, call it here
-    };
-  }, [pdfURL]);
+    if (window.AdobeDC && window.AdobeDC.View) {
+      loadViewer();
+    } else {
+      document.addEventListener("adobe_dc_view_sdk.ready", loadViewer, { once: true });
+    }
+  }, [pdfUrl]);
 
   return (
     <div className="viewer-container">
       <div id="adobe-dc-view" ref={viewerDivRef} className="viewer-div"></div>
     </div>
   );
-};
-
-export default Viewer;
+}
