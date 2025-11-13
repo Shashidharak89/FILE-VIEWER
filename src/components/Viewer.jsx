@@ -49,11 +49,11 @@ export default function Viewer() {
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [isMobilePortrait, setIsMobilePortrait] = useState(false);
 
-  // controls visibility
-  const [controlsVisible, setControlsVisible] = useState(false);
-  const hideTimerRef = useRef(null);
+  // controls visibility — always visible by default
+  const [controlsVisible, setControlsVisible] = useState(true);
 
   const adobeScriptId = useRef("adobe-viewer-script");
+  const adobeReadyListenerRef = useRef(null);
 
   // Build PDF url from current route
   useEffect(() => {
@@ -79,30 +79,19 @@ export default function Viewer() {
     };
   }, []);
 
-  // Show controls and reset hide timer
+  // Show controls (keeps them visible; no hide timer)
   const showControls = () => {
     setControlsVisible(true);
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-    }
-    hideTimerRef.current = setTimeout(() => {
-      setControlsVisible(false);
-    }, 5000); // hide after 5s
   };
 
-  // listen for any pointerdown/touchstart/click to show controls
+  // listen for pointer to ensure controls reappear if someone hides them via CSS or other means
   useEffect(() => {
     const onPointer = () => showControls();
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("touchstart", onPointer, { passive: true });
-    // show initially once user interacts
     return () => {
       document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("touchstart", onPointer);
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
     };
   }, []);
 
@@ -110,14 +99,11 @@ export default function Viewer() {
   const getAdobePages = () => {
     const container = document.getElementById("adobe-pdf-view");
     if (!container) return [];
-    // common Adobe class for pages is .page — fallback to other patterns if needed
     const inlineView = container.querySelector(".adobe-dc-view");
     if (inlineView) {
-      // try different selectors inside inline view
       const pages = inlineView.querySelectorAll(".page, .documentPage, .Page");
       return Array.from(pages);
     }
-    // fallback: search at container level
     const pages2 = container.querySelectorAll(".page, .documentPage, .Page");
     return Array.from(pages2);
   };
@@ -184,7 +170,9 @@ export default function Viewer() {
     const divId = "adobe-pdf-view";
 
     const renderAdobe = () => {
+      // Adobe SDK may not have loaded yet; wait and retry a bit if not present
       if (!window.AdobeDC) {
+        // try again shortly
         setTimeout(renderAdobe, 250);
         return;
       }
@@ -195,7 +183,9 @@ export default function Viewer() {
         setLoading(false);
         return;
       }
-      container.innerHTML = ""; // clear for re-render
+
+      // clear previous content (if any)
+      container.innerHTML = "";
 
       try {
         const adobeDCView = new window.AdobeDC.View({
@@ -230,7 +220,6 @@ export default function Viewer() {
             return;
           }
 
-          // prefer inline view
           const inlineView = containerEl.querySelector(".adobe-dc-view");
           const iframe = containerEl.querySelector("iframe");
 
@@ -268,26 +257,56 @@ export default function Viewer() {
       }
     };
 
-    // load script once
-    if (!document.getElementById(adobeScriptId.current)) {
-      const s = document.createElement("script");
-      s.id = adobeScriptId.current;
-      s.src = "https://acrobatservices.adobe.com/view-sdk/viewer.js";
-      s.async = true;
-      s.onload = renderAdobe;
-      s.onerror = () => {
-        setError("Failed to load Adobe viewer script.");
-        setLoading(false);
+    // Ensure script is loaded and hook into adobe_dc_view_sdk.ready if available
+    const attachScriptAndRender = () => {
+      // If the global ready event exists later, we'll register a listener — keep track so we can cleanup.
+      const onReady = () => {
+        renderAdobe();
       };
-      document.body.appendChild(s);
-    } else {
-      renderAdobe();
-    }
+      adobeReadyListenerRef.current = onReady;
+
+      if (!document.getElementById(adobeScriptId.current)) {
+        const s = document.createElement("script");
+        s.id = adobeScriptId.current;
+        s.src = "https://acrobatservices.adobe.com/view-sdk/viewer.js";
+        s.async = true;
+        s.onload = () => {
+          // Adobe sample uses adobe_dc_view_sdk.ready event; register and also call render as fallback
+          if (typeof document !== "undefined") {
+            document.addEventListener("adobe_dc_view_sdk.ready", onReady, { once: true });
+          }
+          // call render in case SDK is ready immediately
+          renderAdobe();
+        };
+        s.onerror = () => {
+          setError("Failed to load Adobe viewer script.");
+          setLoading(false);
+        };
+        document.body.appendChild(s);
+      } else {
+        // script already present — register ready listener (if needed) and call render
+        if (typeof document !== "undefined") {
+          document.addEventListener("adobe_dc_view_sdk.ready", onReady, { once: true });
+        }
+        renderAdobe();
+      }
+    };
+
+    attachScriptAndRender();
 
     // cleanup
     return () => {
       const container = document.getElementById(divId);
       if (container) container.innerHTML = "";
+      // remove adobe ready listener if still present
+      if (adobeReadyListenerRef.current && typeof document !== "undefined") {
+        try {
+          document.removeEventListener("adobe_dc_view_sdk.ready", adobeReadyListenerRef.current);
+        } catch (e) {
+          // ignore
+        }
+        adobeReadyListenerRef.current = null;
+      }
     };
   }, [pdfUrl, isMobilePortrait]);
 
@@ -307,7 +326,7 @@ export default function Viewer() {
         )}
       </div>
 
-      {/* Floating Prev/Next controls (appear on touch/click, hide after 5s) */}
+      {/* Floating Prev/Next controls (always visible) */}
       <div className={`viewer-floating-controls ${controlsVisible ? "visible" : "hidden"}`} aria-hidden={!controlsVisible}>
         <button className="float-btn prev-btn" onClick={onPrev} aria-label="Previous page">‹</button>
         <button className="float-btn next-btn" onClick={onNext} aria-label="Next page">›</button>
