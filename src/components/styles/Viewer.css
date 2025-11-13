@@ -2,7 +2,7 @@
   --bg:#0f1720;
   --panel: rgba(255,255,255,0.03);
   --muted:#9aa4b2;
-  --accent:#8b5cf6; /* purple accent */
+  --accent:#8b5cf6; /* purple accent for your theme */
   --white:#fff;
 }
 
@@ -39,10 +39,6 @@
   border-radius: 8px;
   text-decoration: none;
   font-size: 13px;
-}
-.viewer-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(139,92,246,0.12);
 }
 .viewer-url {
   max-width: 720px;
@@ -100,69 +96,44 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Make Adobe injected viewer responsive */
+/* Desktop/tablet: ensure Adobe container fits center */
 #adobe-pdf-view .adobe-dc-view,
-#adobe-pdf-view iframe,
-.adobe-dc-view,
-.adobe-inline-injected {
+#adobe-pdf-view iframe {
   width: 100% !important;
-  max-width: 100% !important;
-  display: block !important;
-  margin: 0 auto !important;
-  box-sizing: border-box !important;
-}
-
-/* Inline continuous scroll helpers: ensure pages stack vertically and scale */
-.adobe-dc-view .page,
-.adobe-dc-view .page canvas,
-.adobe-dc-view .page .pageContent,
-.adobe-dc-view .Page,
-.adobe-dc-view .documentPage {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  margin: 0 0 14px 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* SVG / canvas responsiveness */
-.adobe-dc-view svg,
-.adobe-dc-view canvas {
-  max-width: 100% !important;
-  height: auto !important;
-}
-
-/* Text & annotation layers */
-.adobe-dc-view .textLayer,
-.adobe-dc-view .annotationLayer,
-.adobe-dc-view .adobe-dc-annotationLayer {
-  max-width: 100% !important;
-  overflow: visible !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Mobile portrait tweaks */
 .viewer-container.mobile-portrait {
-  padding: 70px 12px 12px 12px; /* leave space for topbar */
+  padding: 70px 12px 12px 12px; /* leave space for topbar + breathing room */
   box-sizing: border-box;
   overflow: auto;
   height: 100%;
 }
+
+/* Target Adobe iframe or injected divs for mobile portrait: make them width:100% and auto height'
+   so pages flow vertically and are readable in portrait orientation. */
+.viewer-container.mobile-portrait #adobe-pdf-view .adobe-dc-view,
 .viewer-container.mobile-portrait .adobe-dc-view,
 .viewer-container.mobile-portrait iframe,
-.viewer-container.mobile-portrait .adobe-inline-injected {
+.viewer-container.mobile-portrait #adobe-pdf-view iframe {
   width: 100% !important;
   height: auto !important;
-  min-height: 420px;
+  min-height: 600px; /* ensures initial readable height; can be adjusted */
   max-width: 100% !important;
   margin: 0 auto;
   display: block;
 }
 
-/* Ensure internal page canvases fit inside mobile */
-.viewer-container.mobile-portrait .adobe-dc-view .page,
-.viewer-container.mobile-portrait .adobe-dc-view canvas {
-  width: 100% !important;
+/* Also make internal pdf canvas elements responsive if Adobe uses them */
+.adobe-dc-view .page,
+.adobe-dc-view .page canvas,
+.adobe-dc-view .Page {
+  max-width: 100% !important;
   height: auto !important;
 }
 
@@ -179,7 +150,7 @@
   border: 1px solid rgba(255,255,255,0.02);
 }
 
-/* Responsive rules */
+/* Responsive: reduce topbar size on small devices */
 @media (max-width: 480px) {
   .viewer-topbar { left: 8px; top: 8px; gap: 8px; }
   .viewer-url { display: none; }
@@ -188,10 +159,9 @@
   .viewer-footer { right: 8px; bottom: 8px; font-size: 11px; }
 }
 
-/* Safety rules for injected inline/iframe structures */
+/* Safety: if Adobe injects shadow DOM or slightly different structure, these high-specificity rules help */
 #adobe-pdf-view iframe[style],
-#adobe-pdf-view .adobe-dc-view[style],
-#adobe-pdf-view .adobe-inline-injected[style] {
+#adobe-pdf-view .adobe-dc-view[style] {
   max-width: 100% !important;
 }
 
@@ -199,4 +169,62 @@
 @media print {
   .viewer-topbar, .viewer-preloader, .viewer-footer { display: none !important; }
   .viewer-container { overflow: visible; height: auto; }
+}
+
+/* Floating Prev/Next controls (show on touch, hide after 5s) */
+.viewer-floating-controls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 12px;
+  pointer-events: none; /* disable when hidden */
+  z-index: 1400;
+  transition: opacity 180ms ease, transform 180ms ease;
+  opacity: 0;
+}
+.viewer-floating-controls.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Base button */
+.float-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 28px rgba(2,6,23,0.55);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+/* Left / right positions are handled by flex space-between */
+.float-btn:hover { transform: translateY(-4px) scale(1.02); background: rgba(0,0,0,0.6); }
+.float-btn:active { transform: translateY(0) scale(0.98); }
+
+/* Slightly smaller on mobile */
+@media (max-width: 480px) {
+  .float-btn { width: 46px; height: 46px; font-size: 24px; border-radius: 10px; }
+  .viewer-floating-controls { padding: 0 8px; }
+}
+
+/* When hidden (class .hidden controlled by component) we make them invisible */
+.viewer-floating-controls.hidden { opacity: 0; pointer-events: none; transform: translateY(-50%) scale(0.98); }
+
+/* Ensure controls don't overlap topbar area on small screens */
+@media (max-width: 720px) {
+  .viewer-floating-controls { top: 55%; }
 }
