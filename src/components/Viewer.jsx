@@ -1,9 +1,9 @@
 // src/components/Viewer.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import "./styles/Viewer.css";
 
-/* buildPdfUrlFromPath - same smart rules as before */
+/* buildPdfUrlFromPath - unchanged smart rules */
 function buildPdfUrlFromPath(pathFromUrl) {
   if (!pathFromUrl) return null;
   let p = pathFromUrl.trim();
@@ -47,7 +47,10 @@ export default function Viewer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
+  const adobeScriptId = useRef("adobe-viewer-script");
 
+  // build pdf url
   useEffect(() => {
     const rawPath = decodeURIComponent(location.pathname.slice(1));
     const built = buildPdfUrlFromPath(rawPath);
@@ -55,12 +58,29 @@ export default function Viewer() {
     setPdfUrl(built || null);
   }, [location.pathname]);
 
+  // determine mobile portrait (simple heuristic)
+  useEffect(() => {
+    function checkMobilePortrait() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      // mobile portrait when width <= 768 and height > width
+      setIsMobilePortrait(w <= 768 && h >= w);
+    }
+    checkMobilePortrait();
+    window.addEventListener("resize", checkMobilePortrait);
+    window.addEventListener("orientationchange", checkMobilePortrait);
+    return () => {
+      window.removeEventListener("resize", checkMobilePortrait);
+      window.removeEventListener("orientationchange", checkMobilePortrait);
+    };
+  }, []);
+
+  // render adobe viewer whenever pdfUrl or isMobilePortrait changes
   useEffect(() => {
     if (!pdfUrl) return;
     setLoading(true);
     setError(null);
 
-    const scriptId = "adobe-viewer-script";
     const divId = "adobe-pdf-view";
 
     const renderAdobe = () => {
@@ -75,7 +95,7 @@ export default function Viewer() {
         setLoading(false);
         return;
       }
-      container.innerHTML = "";
+      container.innerHTML = ""; // clear for re-render
 
       try {
         const adobeDCView = new window.AdobeDC.View({
@@ -83,14 +103,27 @@ export default function Viewer() {
           divId,
         });
 
+        // Choose embed mode based on device:
+        // - on mobile portrait use IN_LINE so the viewer adapts to container width and stacks pages vertically
+        // - on desktop/tablet use SIZED_CONTAINER for a more app-like view
+        const embedMode = isMobilePortrait ? "IN_LINE" : "SIZED_CONTAINER";
+
         adobeDCView.previewFile(
-          { content: { location: { url: pdfUrl } }, metaData: { fileName: pdfUrl.split("/").pop() } },
-          { embedMode: "SIZED_CONTAINER", showDownloadPDF: false, showPrintPDF: false, dockPageControls: true }
+          {
+            content: { location: { url: pdfUrl } },
+            metaData: { fileName: pdfUrl.split("/").pop() },
+          },
+          {
+            embedMode,
+            showDownloadPDF: false,
+            showPrintPDF: false,
+            dockPageControls: true,
+          }
         );
 
-        // poll for loaded viewer element
+        // Poll for loaded viewer element and then apply responsive tweaks
         const start = Date.now();
-        const timeoutMs = 20000;
+        const timeoutMs = 20_000;
         const poll = () => {
           const containerEl = document.getElementById(divId);
           if (!containerEl) {
@@ -102,6 +135,22 @@ export default function Viewer() {
           const docRole = containerEl.querySelector("[role='document']");
           const adobeClass = containerEl.querySelector(".adobe-dc-view");
           if (iframe || docRole || adobeClass) {
+            // Apply direct styles to iframe/adobe container for better mobile portrait fit
+            // (We keep CSS rules in Viewer.css but some hosts need runtime forcing)
+            // Make iframe and adobe container full width and auto height so pages stack vertically
+            if (iframe) {
+              // set styles on iframe element
+              iframe.style.width = "100%";
+              iframe.style.height = "100vh";
+              iframe.style.minHeight = "600px";
+              iframe.style.maxHeight = "100vh";
+              iframe.style.border = "0";
+            }
+            if (adobeClass) {
+              adobeClass.style.width = "100%";
+              adobeClass.style.height = "100%";
+            }
+            // done
             setLoading(false);
             setLoadedOnce(true);
             return;
@@ -113,6 +162,7 @@ export default function Viewer() {
           }
           setTimeout(poll, 300);
         };
+
         setTimeout(poll, 300);
       } catch (err) {
         setError("Failed to initialize Adobe viewer: " + (err && err.message));
@@ -120,9 +170,10 @@ export default function Viewer() {
       }
     };
 
-    if (!document.getElementById(scriptId)) {
+    // load script once
+    if (!document.getElementById(adobeScriptId.current)) {
       const s = document.createElement("script");
-      s.id = scriptId;
+      s.id = adobeScriptId.current;
       s.src = "https://acrobatservices.adobe.com/view-sdk/viewer.js";
       s.async = true;
       s.onload = renderAdobe;
@@ -135,11 +186,12 @@ export default function Viewer() {
       renderAdobe();
     }
 
+    // cleanup
     return () => {
       const container = document.getElementById(divId);
       if (container) container.innerHTML = "";
     };
-  }, [pdfUrl]);
+  }, [pdfUrl, isMobilePortrait]);
 
   return (
     <div className="viewer-root">
@@ -167,7 +219,7 @@ export default function Viewer() {
       </div>
 
       {/* Adobe viewer container */}
-      <div id="adobe-pdf-view" className="viewer-container" />
+      <div id="adobe-pdf-view" className={`viewer-container ${isMobilePortrait ? "mobile-portrait" : ""}`} />
 
       {/* small footer */}
       <div className="viewer-footer">

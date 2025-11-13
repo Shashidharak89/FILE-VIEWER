@@ -1,23 +1,18 @@
-/* src/styles/Viewer.css */
-/* Theme */
 :root{
   --bg:#0f1720;
   --panel: rgba(255,255,255,0.03);
   --muted:#9aa4b2;
-  --accent:#06b6d4;
-  --danger:#ff6b6b;
-  --glass: rgba(255,255,255,0.04);
+  --accent:#8b5cf6; /* purple accent for your theme */
   --white:#fff;
-  --radius:10px;
 }
 
-/* Root layout */
+/* Root */
 .viewer-root {
   width: 100%;
   height: 100vh;
-  background: linear-gradient(180deg, #07101a 0%, #0f1720 100%);
-  color: var(--white);
   position: relative;
+  background: linear-gradient(180deg,#06050a 0%, #0f0b17 100%);
+  color: var(--white);
   overflow: hidden;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
@@ -33,30 +28,18 @@
   gap: 10px;
   pointer-events: auto;
 }
-
-/* Button */
 .viewer-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: var(--panel);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.03);
   color: var(--white);
   border-radius: 8px;
   text-decoration: none;
   font-size: 13px;
-  transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
-  backdrop-filter: blur(6px);
 }
-.viewer-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-  background: rgba(255,255,255,0.05);
-}
-.viewer-btn .icon { opacity: 0.95; }
-
-/* URL display */
 .viewer-url {
   max-width: 720px;
   color: var(--muted);
@@ -64,69 +47,45 @@
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 12px;
-  border: 1px solid rgba(255,255,255,0.02);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.viewer-hint {
+  color: var(--muted);
+  background: rgba(0,0,0,0.28);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
 
-/* hint fallback */
-.viewer-hint { color: var(--muted); background: rgba(0,0,0,0.28); padding: 8px 12px; border-radius: 8px; font-size:13px; }
-
-/* Preloader overlay */
+/* Preloader */
 .viewer-preloader {
   position: absolute;
   left: 0; top: 0; right: 0; bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 14px;
-  background: linear-gradient(180deg, rgba(2,6,23,0.65), rgba(2,6,23,0.55));
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+  background: rgba(3,3,6,0.5);
   z-index: 1100;
-  transition: opacity .28s ease, transform .28s ease;
-  opacity: 0;
-  pointer-events: none;
+  transition: opacity .28s ease, visibility .28s;
+  opacity: 0; visibility: hidden; pointer-events: none;
 }
-.viewer-preloader.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-.viewer-preloader.hidden { opacity: 0; pointer-events: none; }
-
-/* spinner */
-.spinner {
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.spinner-svg {
-  width: 64px; height: 64px;
-}
+.viewer-preloader.visible { opacity: 1; visibility: visible; pointer-events: auto; }
+.viewer-preloader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.spinner-svg { width: 64px; height: 64px; }
 .spinner-svg circle {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 4;
-  stroke-linecap: round;
-  stroke-dasharray: 94;
-  stroke-dashoffset: 70;
-  transform-origin: 50% 50%;
+  fill: none; stroke: var(--accent); stroke-width: 4;
+  stroke-dasharray: 94; stroke-dashoffset: 70; stroke-linecap: round;
   animation: spin 1s linear infinite, dash 1.5s ease-in-out infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes dash {
-  0% { stroke-dashoffset: 94; }
-  50% { stroke-dashoffset: 31; transform: rotate(45deg); }
-  100% { stroke-dashoffset: 94; transform: rotate(360deg); }
+  0% { stroke-dashoffset: 94; } 50% { stroke-dashoffset: 31; transform: rotate(45deg); } 100% { stroke-dashoffset: 94; transform: rotate(360deg); }
 }
-
-/* preloader text */
 .preloader-text { color: var(--white); font-size: 15px; font-weight: 600; }
-.preloader-error { color: var(--danger); font-size: 13px; margin-top: 4px; }
+.preloader-error { color: #ff6b6b; font-size: 13px; }
 
-/* Adobe viewer container */
+/* Viewer container - default for desktop/tablet */
 .viewer-container {
   width: 100%;
   height: 100%;
@@ -135,6 +94,47 @@
   left: 0; top: 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Desktop/tablet: ensure Adobe container fits center */
+#adobe-pdf-view .adobe-dc-view,
+#adobe-pdf-view iframe {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Mobile portrait tweaks */
+.viewer-container.mobile-portrait {
+  padding: 70px 12px 12px 12px; /* leave space for topbar + breathing room */
+  box-sizing: border-box;
+  overflow: auto;
+  height: 100%;
+}
+
+/* Target Adobe iframe or injected divs for mobile portrait: make them width:100% and auto height'
+   so pages flow vertically and are readable in portrait orientation. */
+.viewer-container.mobile-portrait #adobe-pdf-view .adobe-dc-view,
+.viewer-container.mobile-portrait .adobe-dc-view,
+.viewer-container.mobile-portrait iframe,
+.viewer-container.mobile-portrait #adobe-pdf-view iframe {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 600px; /* ensures initial readable height; can be adjusted */
+  max-width: 100% !important;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Also make internal pdf canvas elements responsive if Adobe uses them */
+.adobe-dc-view .page,
+.adobe-dc-view .page canvas,
+.adobe-dc-view .Page {
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 /* Footer */
@@ -150,10 +150,23 @@
   border: 1px solid rgba(255,255,255,0.02);
 }
 
-/* small responsive tweaks */
-@media (max-width: 720px) {
+/* Responsive: reduce topbar size on small devices */
+@media (max-width: 480px) {
   .viewer-topbar { left: 8px; top: 8px; gap: 8px; }
   .viewer-url { display: none; }
-  .viewer-btn { padding: 7px 9px; font-size: 12px; }
+  .viewer-btn { padding: 6px 10px; font-size: 12px; }
+  .viewer-hint { font-size: 12px; padding: 6px 8px; }
   .viewer-footer { right: 8px; bottom: 8px; font-size: 11px; }
+}
+
+/* Safety: if Adobe injects shadow DOM or slightly different structure, these high-specificity rules help */
+#adobe-pdf-view iframe[style],
+#adobe-pdf-view .adobe-dc-view[style] {
+  max-width: 100% !important;
+}
+
+/* Print */
+@media print {
+  .viewer-topbar, .viewer-preloader, .viewer-footer { display: none !important; }
+  .viewer-container { overflow: visible; height: auto; }
 }
