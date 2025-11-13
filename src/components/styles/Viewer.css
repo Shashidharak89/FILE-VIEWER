@@ -2,7 +2,7 @@
   --bg:#0f1720;
   --panel: rgba(255,255,255,0.03);
   --muted:#9aa4b2;
-  --accent:#8b5cf6; /* purple accent for your theme */
+  --accent:#8b5cf6; /* purple accent */
   --white:#fff;
 }
 
@@ -39,6 +39,10 @@
   border-radius: 8px;
   text-decoration: none;
   font-size: 13px;
+}
+.viewer-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(139,92,246,0.12);
 }
 .viewer-url {
   max-width: 720px;
@@ -96,44 +100,69 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Desktop/tablet: ensure Adobe container fits center */
+/* Make Adobe injected viewer responsive */
 #adobe-pdf-view .adobe-dc-view,
-#adobe-pdf-view iframe {
+#adobe-pdf-view iframe,
+.adobe-dc-view,
+.adobe-inline-injected {
   width: 100% !important;
-  height: 100% !important;
-  max-height: 100vh !important;
-  display: block;
-  margin: 0 auto;
-  box-sizing: border-box;
+  max-width: 100% !important;
+  display: block !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Inline continuous scroll helpers: ensure pages stack vertically and scale */
+.adobe-dc-view .page,
+.adobe-dc-view .page canvas,
+.adobe-dc-view .page .pageContent,
+.adobe-dc-view .Page,
+.adobe-dc-view .documentPage {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 0 14px 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* SVG / canvas responsiveness */
+.adobe-dc-view svg,
+.adobe-dc-view canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Text & annotation layers */
+.adobe-dc-view .textLayer,
+.adobe-dc-view .annotationLayer,
+.adobe-dc-view .adobe-dc-annotationLayer {
+  max-width: 100% !important;
+  overflow: visible !important;
 }
 
 /* Mobile portrait tweaks */
 .viewer-container.mobile-portrait {
-  padding: 70px 12px 12px 12px; /* leave space for topbar + breathing room */
+  padding: 70px 12px 12px 12px; /* leave space for topbar */
   box-sizing: border-box;
   overflow: auto;
   height: 100%;
 }
-
-/* Target Adobe iframe or injected divs for mobile portrait: make them width:100% and auto height'
-   so pages flow vertically and are readable in portrait orientation. */
-.viewer-container.mobile-portrait #adobe-pdf-view .adobe-dc-view,
 .viewer-container.mobile-portrait .adobe-dc-view,
 .viewer-container.mobile-portrait iframe,
-.viewer-container.mobile-portrait #adobe-pdf-view iframe {
+.viewer-container.mobile-portrait .adobe-inline-injected {
   width: 100% !important;
   height: auto !important;
-  min-height: 600px; /* ensures initial readable height; can be adjusted */
+  min-height: 420px;
   max-width: 100% !important;
   margin: 0 auto;
   display: block;
 }
 
-/* Also make internal pdf canvas elements responsive if Adobe uses them */
-.adobe-dc-view .page,
-.adobe-dc-view .page canvas,
-.adobe-dc-view .Page {
-  max-width: 100% !important;
+/* Ensure internal page canvases fit inside mobile */
+.viewer-container.mobile-portrait .adobe-dc-view .page,
+.viewer-container.mobile-portrait .adobe-dc-view canvas {
+  width: 100% !important;
   height: auto !important;
 }
 
@@ -150,7 +179,7 @@
   border: 1px solid rgba(255,255,255,0.02);
 }
 
-/* Responsive: reduce topbar size on small devices */
+/* Responsive rules */
 @media (max-width: 480px) {
   .viewer-topbar { left: 8px; top: 8px; gap: 8px; }
   .viewer-url { display: none; }
@@ -159,9 +188,10 @@
   .viewer-footer { right: 8px; bottom: 8px; font-size: 11px; }
 }
 
-/* Safety: if Adobe injects shadow DOM or slightly different structure, these high-specificity rules help */
+/* Safety rules for injected inline/iframe structures */
 #adobe-pdf-view iframe[style],
-#adobe-pdf-view .adobe-dc-view[style] {
+#adobe-pdf-view .adobe-dc-view[style],
+#adobe-pdf-view .adobe-inline-injected[style] {
   max-width: 100% !important;
 }
 
